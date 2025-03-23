@@ -99,8 +99,15 @@ public class Player : MonoBehaviour
         }
     }
 
+    private void Update() //Fill this in for the State Machine Assignment
+    {
+
+    }
     void FixedUpdate()
     {
         GetComponent<Renderer>().material.color = stateColors[(int)m_nState];
     }
+
+    
+
 }

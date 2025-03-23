@@ -41,6 +41,11 @@ public class Target : MonoBehaviour
         m_player = GameObject.FindObjectOfType(typeof(Player)) as Player;
     }
 
+    private void Update() //Fill this in for the State Machine Assignment
+    {
+        
+    }
+
     void FixedUpdate()
     {
         GetComponent<Renderer>().material.color = stateColors[(int)m_nState];
