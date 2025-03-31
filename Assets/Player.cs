@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -51,15 +53,16 @@ public class Player : MonoBehaviour
     void CheckForDive()
     {
         if (Input.GetMouseButton(0) && (m_nState != eState.kDiving && m_nState != eState.kRecovering))
-        {
+        {         
             // Start the dive operation
             m_nState = eState.kDiving;
             m_fSpeed = 0.0f;
 
             // Store starting parameters.
             m_vDiveStartPos = transform.position;
-            m_vDiveEndPos = m_vDiveStartPos - (transform.right * m_fDiveDistance);
+            m_vDiveEndPos = m_vDiveStartPos - (transform.up * m_fDiveDistance); //changed right to up
             m_fDiveStartTime = Time.time;
+
         }
     }
 
@@ -78,6 +81,7 @@ public class Player : MonoBehaviour
         Vector2 vScreenSize = Camera.main.ScreenToWorldPoint(new Vector2(Screen.width, Screen.height));
         Vector2 vOffset = new Vector2(transform.position.x - vScreenPos.x, transform.position.y - vScreenPos.y);
 
+        // print(vScreenPos + " " + vScreenSize + " " + vOffset);
         // Find the target angle being requested.
         m_fTargetAngle = Mathf.Atan2(vOffset.y, vOffset.x) * Mathf.Rad2Deg;
 
@@ -99,8 +103,62 @@ public class Player : MonoBehaviour
         }
     }
 
-    private void Update() //Fill this in for the State Machine Assignment
+    void Update() //Fill this in for the State Machine Assignment
     {
+        UpdateDirectionAndSpeed();
+        CheckForDive();
+        Vector3 vScreenPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        float rotateSpeed = 2;
+        //print(m_nState);
+        //print(m_fDiveStartTime);
+        switch (m_nState)
+        {
+            case eState.kDiving:
+                //The player does a dive towards its current direction with no control.
+                transform.position = Vector3.Lerp(transform.position, m_vDiveEndPos, 5 * Time.deltaTime);
+
+                if (transform.position == m_vDiveEndPos)
+                {
+                    print("recovered");
+
+                    //if the current time is greater than the dive start time + a duration, set state.
+                    if (Time.time >= m_fDiveStartTime + 1f)
+                    {
+                        m_nState = eState.kRecovering;
+                        if (Time.time >= m_fDiveStartTime + 2f)
+                        {
+                            m_nState = eState.kMoveSlow;
+                        }
+                    }
+                }
+                break;
+            default:
+                //The player will follow the mouse in normal conditions.
+
+                if (m_fTargetSpeed == m_fSlowSpeed)
+                {
+                    m_fSpeed = m_fTargetSpeed * 200;
+                    m_nState = eState.kMoveSlow;
+                    rotateSpeed = m_fFastRotateMax/2;
+                }
+                if (m_fTargetSpeed == m_fMaxSpeed)
+                {
+                    m_fSpeed = m_fTargetSpeed * 60;
+                    m_nState = eState.kMoveFast;
+                    rotateSpeed = m_fFastRotateSpeed;
+                }
+
+                if (!(transform.position.x > -11 && transform.position.x < 11 && transform.position.y > -6 && transform.position.y < 6))
+                {
+                    //If the player slides out of the map, reset it.
+                    transform.position = new Vector3(0, 0, 0);
+                }
+
+                transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0, 0, m_fTargetAngle - 90f), rotateSpeed * Time.deltaTime);
+                transform.position += -transform.up * (m_fSpeed) * Time.deltaTime;
+                break;
+        }
+           
 
     }
     void FixedUpdate()

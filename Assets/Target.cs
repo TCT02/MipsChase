@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class Target : MonoBehaviour
 {
@@ -35,15 +36,110 @@ public class Target : MonoBehaviour
     public Vector3 m_vHopEndPos;
 
     void Start()
-    {
+    {      
         // Setup the initial state and get the player GO.
         m_nState = eState.kIdle;
-        m_player = GameObject.FindObjectOfType(typeof(Player)) as Player;
+        //m_player = GameObject.FindObjectOfType(typeof(Player)) as Player;
+        m_player = GameObject.FindFirstObjectByType(typeof(Player)) as Player; //The previous line is outdated and doesn't work
     }
 
     private void Update() //Fill this in for the State Machine Assignment
     {
         
+        if (m_nState != eState.kCaught)
+        {
+            //calulate distance between player and rabbit
+            float distance = Vector3.Distance(gameObject.transform.position, m_player.transform.position);
+            
+            //int moveDist = 1;
+            Vector2 moveDist = new Vector2(
+                Mathf.Abs(gameObject.transform.position.x - m_player.transform.position.x)
+                , Mathf.Abs(gameObject.transform.position.y - m_player.transform.position.y)
+                );
+
+            //If the distance between the player and rabbit is within the scare distance...
+            if (distance <= m_fScaredDistance) // && m_nMaxMoveAttempts > 0
+            {
+                m_nState = eState.kHopStart;
+                //Calculate the new position to run
+                m_vHopStartPos = transform.position; //Start position
+
+                //if (transform.position.x > -9.5 && transform.position.x < 9.5 && transform.position.y > -4.5 && transform.position.y < 4.5)
+                //{
+                    if (m_player.transform.position.x < transform.position.x)
+                    {
+                        m_vHopEndPos.x = m_vHopStartPos.x + moveDist.x;
+                        print("Running right");
+
+                        
+
+                    }
+                    if (m_player.transform.position.x > transform.position.x)
+                    {
+                        m_vHopEndPos.x = m_vHopStartPos.x - moveDist.x;
+                        print("Running left");
+
+ 
+                    }
+                    if (m_player.transform.position.y < transform.position.y)
+                    {
+                        m_vHopEndPos.y = m_vHopStartPos.y + moveDist.y;
+                        print("Running up");
+
+
+                    }
+                    if (m_player.transform.position.y > transform.position.y)
+                    {
+                        m_vHopEndPos.y = m_vHopStartPos.y - moveDist.y;
+                        print("Running down");
+
+                    }
+                //}
+                //else
+                //{
+                    //reset the rabbits' direction back inside the map.
+                   // m_vHopEndPos = new Vector3(0, 0, 0);
+                //}
+
+                //If the end position is outside the bounds, limit them to the bound.
+                if (m_vHopEndPos.x > 9.5)
+                {
+                    m_vHopEndPos.x = 9.5f;
+                }
+                if (m_vHopEndPos.x < -9.5)
+                {
+                    m_vHopEndPos.x = -9.5f;
+                }
+                if (m_vHopEndPos.y > 4.5)
+                {
+                    m_vHopEndPos.y = 4.5f;
+                }
+                if (m_vHopEndPos.y < -4.5)
+                {
+                    m_vHopEndPos.y = -4.5f;
+                }
+
+                // Turn the rabbit towards the new location
+                Vector2 vOffset = new Vector2(transform.position.x - m_vHopEndPos.x, transform.position.y - m_vHopEndPos.y);             
+                float dirAngle = Mathf.Atan2(vOffset.y, vOffset.x) * Mathf.Rad2Deg;
+                transform.rotation = Quaternion.Euler(0, 0, dirAngle + 90f);
+                
+                //Run away to the new position
+                transform.position = Vector3.Lerp(transform.position, m_vHopEndPos, m_fHopSpeed * Time.deltaTime);
+                m_nMaxMoveAttempts -= 1;
+
+            }
+            else //Otherwise, do nothing and stay idle.
+            {
+                m_nState = eState.kIdle;
+            }
+
+        }
+        else
+        {
+            print("Rabbit was caught!");
+        }
+
     }
 
     void FixedUpdate()
